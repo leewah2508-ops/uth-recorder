@@ -1,0 +1,9 @@
+{
+  "name":"Ultimate Texas Hold'em Hand Recorder",
+  "short_name":"UTH Recorder",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#0b0d10",
+  "theme_color":"#0b0d10",
+  "description":"Fast Ultimate Texas Hold'em hand recording and session statistics."
+}
