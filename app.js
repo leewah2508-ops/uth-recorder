@@ -23,6 +23,8 @@
   let selectedRankResult = 'below';
   let overrideActive = false;
   let recommendedAction = null;
+  let historySelectMode = false;
+  let selectedDeleteIds = new Set();
 
   function defaultState(){
     return {
@@ -410,27 +412,158 @@
     toast('Last saved hand removed');
   }
 
+  function setHistorySelectMode(active){
+    historySelectMode = active;
+    if (!active) selectedDeleteIds.clear();
+    $('historySelectToggle').textContent = active ? 'Cancel' : 'Select';
+    renderHistory();
+  }
+
+  function updateBulkDeleteBar(){
+    const count = selectedDeleteIds.size;
+    $('bulkDeleteBar').hidden = !historySelectMode;
+    $('bulkDeleteCount').textContent = `${count} selected`;
+    $('deleteSelectedBtn').disabled = count === 0;
+  }
+
+  function toggleDeleteSelection(id){
+    if (selectedDeleteIds.has(id)) selectedDeleteIds.delete(id);
+    else selectedDeleteIds.add(id);
+    renderHistory();
+  }
+
+  function deleteHands(ids){
+    if (!ids.length) return;
+    const count = ids.length;
+    const idSet = new Set(ids);
+    state.hands = state.hands.filter(hand => !idSet.has(hand.id));
+    selectedDeleteIds.clear();
+    historySelectMode = false;
+    editIndex = null;
+    saveState();
+    resetForm();
+    renderStats();
+    renderHistory();
+    toast(count === 1 ? 'Hand deleted' : `${count} hands deleted`);
+  }
+
+  function deleteOneHand(id){
+    deleteHands([id]);
+  }
+
+  function deleteSelectedHands(){
+    const ids = [...selectedDeleteIds];
+    if (!ids.length) return;
+    deleteHands(ids);
+  }
+
+  function attachSwipeDelete(wrapper, row, handId){
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let swiping = false;
+
+    row.addEventListener('touchstart', event => {
+      if (historySelectMode || !event.touches.length) return;
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
+      currentX = 0;
+      swiping = false;
+      row.classList.remove('noTransition');
+    }, {passive:true});
+
+    row.addEventListener('touchmove', event => {
+      if (historySelectMode || !event.touches.length) return;
+      const dx = event.touches[0].clientX - startX;
+      const dy = event.touches[0].clientY - startY;
+      if (Math.abs(dy) > Math.abs(dx) && !swiping) return;
+      if (dx < -8) swiping = true;
+      if (!swiping) return;
+      currentX = Math.max(-86, Math.min(0, dx));
+      row.style.transform = `translateX(${currentX}px)`;
+    }, {passive:true});
+
+    row.addEventListener('touchend', () => {
+      if (!swiping) return;
+      const open = currentX < -42;
+      wrapper.classList.toggle('revealed', open);
+      row.style.transform = open ? 'translateX(-86px)' : '';
+    });
+
+    row.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'touch' || historySelectMode) return;
+      startX = event.clientX;
+      startY = event.clientY;
+      currentX = 0;
+      swiping = false;
+      row.setPointerCapture?.(event.pointerId);
+    });
+
+    row.addEventListener('pointermove', event => {
+      if (event.pointerType === 'touch' || historySelectMode) return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (Math.abs(dy) > Math.abs(dx) && !swiping) return;
+      if (dx < -8) swiping = true;
+      if (!swiping) return;
+      currentX = Math.max(-86, Math.min(0, dx));
+      row.style.transform = `translateX(${currentX}px)`;
+    });
+
+    row.addEventListener('pointerup', event => {
+      if (event.pointerType === 'touch' || !swiping) return;
+      const open = currentX < -42;
+      wrapper.classList.toggle('revealed', open);
+      row.style.transform = open ? 'translateX(-86px)' : '';
+    });
+  }
+
   function renderHistory(){
     const list = $('historyList');
     list.innerHTML = '';
+    updateBulkDeleteBar();
     if (!state.hands.length) { list.innerHTML = '<div class="emptyState">No saved hands yet.</div>'; return; }
     [...state.hands].sort((a,b)=>b.handNumber-a.handNumber).forEach(hand=>{
       const sourceIndex = state.hands.findIndex(h=>h.id===hand.id);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'historySwipe';
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'rowDeleteBtn';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', event => {
+        event.stopPropagation();
+        deleteOneHand(hand.id);
+      });
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'historyRow';
+      row.dataset.handId = hand.id;
+      row.classList.toggle('selecting', historySelectMode);
+      row.classList.toggle('selectedForDelete', selectedDeleteIds.has(hand.id));
       const pl = toNumber(hand.netPL);
       const deviation = hand.strategyDeviation ? ' · Warning' : '';
       const modeText = hand.mode === 'post' ? 'Post · ' : '';
       row.innerHTML = `
+        <span class="selectDot" aria-hidden="true">${selectedDeleteIds.has(hand.id) ? '✓' : ''}</span>
         <span class="historyNo">#${hand.handNumber}</span>
         <span class="historyMeta">
           <span class="historyCards">${cardHtml(hand.cards?.hole1)} ${cardHtml(hand.cards?.hole2)} · ${actionLabels[hand.action] || '-'}</span>
           <small>${modeText}${String(hand.result || '-').toUpperCase()} · ${hand.qualifies ? 'Dealer ' + hand.qualifies : 'Fold'} · A $${hand.ante} JP $${hand.jackpot} Trips $${hand.trips}${deviation}</small>
         </span>
         <strong class="historyPL ${pl>0?'positive':pl<0?'negative':''}">${pl===0?'$0.00':money(pl,true)}</strong>`;
-      row.addEventListener('click',()=>loadForEdit(sourceIndex));
-      list.appendChild(row);
+      row.addEventListener('click',()=>{
+        if (wrapper.classList.contains('revealed')) {
+          wrapper.classList.remove('revealed');
+          row.style.transform = '';
+          return;
+        }
+        if (historySelectMode) toggleDeleteSelection(hand.id);
+        else loadForEdit(sourceIndex);
+      });
+      attachSwipeDelete(wrapper, row, hand.id);
+      wrapper.append(deleteBtn, row);
+      list.appendChild(wrapper);
     });
   }
 
@@ -576,6 +709,8 @@
   $('postMode').addEventListener('click',()=>{setMode('post');openSheet('moreSheet');});
   $('saveBtn').addEventListener('click',saveHand);
   $('undoBtn').addEventListener('click',undo);
+  $('historySelectToggle').addEventListener('click',()=>setHistorySelectMode(!historySelectMode));
+  $('deleteSelectedBtn').addEventListener('click',deleteSelectedHands);
   $('overrideToggle').addEventListener('click',()=>{
     overrideActive = !overrideActive;
     $('overrideField').hidden = !overrideActive;

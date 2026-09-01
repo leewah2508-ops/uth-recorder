@@ -149,7 +149,14 @@
     <section class="sheet historySheet" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
       <div class="sheetHeader">
         <h2 id="historyTitle">Saved hands</h2>
-        <button class="iconClose" data-close-sheet="historySheet" type="button">×</button>
+        <div class="sheetHeaderActions">
+          <button class="miniBtn" id="historySelectToggle" type="button">Select</button>
+          <button class="iconClose" data-close-sheet="historySheet" type="button">×</button>
+        </div>
+      </div>
+      <div class="bulkDeleteBar" id="bulkDeleteBar" hidden>
+        <span id="bulkDeleteCount">0 selected</span>
+        <button class="dangerBtn" id="deleteSelectedBtn" type="button">DELETE SELECTED</button>
       </div>
       <div id="historyList"></div>
     </section>
