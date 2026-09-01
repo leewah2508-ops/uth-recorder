@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090b0f" />
   <title>UTH Hand Recorder</title>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
   <main class="app" id="app">
@@ -50,12 +50,18 @@
 
     <section>
       <div class="sectionLabel">PLAY</div>
-      <div class="actionRow" id="actionRow">
-        <button class="actionBtn" data-action="4x" type="button"><strong>4×</strong><span id="play4x">$100</span></button>
-        <button class="actionBtn check" data-action="check" type="button"><strong>CHECK</strong><span>no bet</span></button>
-        <button class="actionBtn" data-action="2x" type="button"><strong>2×</strong><span id="play2x">$50</span></button>
-        <button class="actionBtn" data-action="1x" type="button"><strong>1×</strong><span id="play1x">$25</span></button>
-        <button class="actionBtn fold" data-action="fold" type="button"><strong>FOLD</strong><span>$0</span></button>
+      <div class="actionBoard" id="actionRow">
+        <div class="actionStage preflopStage">
+          <span>Pre-flop</span>
+          <button class="actionBtn" data-action="4x" type="button"><strong>4×</strong><small id="play4x">$100</small></button>
+          <button class="actionBtn check" data-action="check" type="button"><strong>CHECK</strong><small>wait</small></button>
+        </div>
+        <div class="actionStage laterStage">
+          <span>If checked</span>
+          <button class="actionBtn" data-action="2x" type="button"><strong>2×</strong><small id="play2x">$50</small></button>
+          <button class="actionBtn" data-action="1x" type="button"><strong>1×</strong><small id="play1x">$25</small></button>
+          <button class="actionBtn fold" data-action="fold" type="button"><strong>FOLD</strong><small>$0</small></button>
+        </div>
       </div>
       <div class="strategyWarning" id="strategyWarning" hidden></div>
     </section>
@@ -106,6 +112,20 @@
         Manual net P/L
         <input class="moneyInput" id="netOverride" type="text" inputmode="decimal" step="0.01" placeholder="0.00" />
       </label>
+    </section>
+
+    <section class="recentPanel">
+      <div class="recentHeader">
+        <span>Session snapshot</span>
+        <button id="recentOpen" type="button">View all</button>
+      </div>
+      <div class="quickStats" aria-label="Session snapshot">
+        <div><span>Hands</span><strong id="miniHands">0</strong></div>
+        <div><span>Bankroll</span><strong id="miniBankroll">$3,000</strong></div>
+        <div><span>Expected</span><strong id="miniExpected">$0.00</strong></div>
+        <div><span>Vs EV</span><strong id="miniVsEV">$0.00</strong></div>
+      </div>
+      <div id="recentHands" class="recentHands"></div>
     </section>
 
     <footer class="footerActions">
@@ -209,6 +229,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=5" defer></script>
 </body>
 </html>

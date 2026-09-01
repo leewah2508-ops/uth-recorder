@@ -95,6 +95,7 @@
     const pl = sessionPL();
     $('sessionPL').textContent = pl === 0 ? '$0.00' : money(pl,true);
     $('sessionPL').className = pl > 0 ? 'positive' : pl < 0 ? 'negative' : '';
+    renderRecentHands();
   }
 
   function applyDefaults(){
@@ -591,6 +592,38 @@
     });
   }
 
+  function renderRecentHands(){
+    const list = $('recentHands');
+    if (!list) return;
+    const actual = sessionPL();
+    const expected = expectedPL();
+    const current = state.startingBankroll + actual;
+    $('miniHands').textContent = state.hands.length;
+    $('miniBankroll').textContent = money(current);
+    $('miniExpected').textContent = expected === 0 ? '$0.00' : money(expected,true);
+    $('miniVsEV').textContent = (actual - expected) === 0 ? '$0.00' : money(actual - expected,true);
+    $('miniBankroll').className = current >= state.startingBankroll ? 'positive' : 'negative';
+    $('miniExpected').className = expected < 0 ? 'negative' : expected > 0 ? 'positive' : '';
+    $('miniVsEV').className = actual - expected > 0 ? 'positive' : actual - expected < 0 ? 'negative' : '';
+    list.innerHTML = '';
+    const recent = [...state.hands].sort((a,b)=>b.handNumber-a.handNumber).slice(0,2);
+    if (!recent.length) {
+      list.innerHTML = '<div class="recentEmpty">Recent saved hands will appear here.</div>';
+      return;
+    }
+    recent.forEach(hand => {
+      const row = document.createElement('div');
+      row.className = 'recentRow';
+      const pl = toNumber(hand.netPL);
+      const status = hand.partial ? 'Partial' : String(hand.result || '-').toUpperCase();
+      row.innerHTML = `
+        <strong>#${hand.handNumber}</strong>
+        <span>${cardHtml(hand.cards?.hole1)} ${cardHtml(hand.cards?.hole2)} · ${actionLabels[hand.action] || '-'} · ${status}</span>
+        <strong class="${pl>0?'positive':pl<0?'negative':''}">${pl===0?'$0.00':money(pl,true)}</strong>`;
+      list.appendChild(row);
+    });
+  }
+
   function loadForEdit(index){
     const hand = state.hands[index]; if (!hand) return;
     editIndex = index;
@@ -727,6 +760,7 @@
   document.querySelectorAll('.sheetBackdrop').forEach(backdrop=>backdrop.addEventListener('click',e=>{if(e.target===backdrop) closeSheet(backdrop.id);}));
 
   $('historyOpen').addEventListener('click',()=>{renderHistory();openSheet('historySheet');});
+  $('recentOpen').addEventListener('click',()=>{renderHistory();openSheet('historySheet');});
   $('statsOpen').addEventListener('click',()=>{renderStats();openSheet('statsSheet');});
   $('moreOpen').addEventListener('click',()=>openSheet('moreSheet'));
   $('liveMode').addEventListener('click',()=>setMode('live'));
