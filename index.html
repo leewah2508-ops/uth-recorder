@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0d10" />
+  <meta name="theme-color" content="#090b0f" />
   <title>UTH Hand Recorder</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
@@ -17,7 +17,8 @@
       </button>
       <div class="topStats">
         <button class="statLink" id="statsOpen" type="button">
-          <span>Session</span><strong id="sessionPL">$0.00</strong>
+          <span>Session</span>
+          <strong id="sessionPL">$0.00</strong>
         </button>
         <button class="moreButton" id="moreOpen" type="button" aria-label="More details">•••</button>
       </div>
@@ -29,9 +30,9 @@
     </div>
 
     <section class="betRow" aria-label="Bets">
-      <label class="betBox">Ante<input id="ante" type="number" inputmode="decimal" min="0" step="5" value="25" /></label>
-      <label class="betBox">Jackpot<input id="jackpot" type="number" inputmode="decimal" min="0" step="5" value="10" /></label>
-      <label class="betBox">Trips<input id="trips" type="number" inputmode="decimal" min="0" step="5" value="0" /></label>
+      <label class="betBox">Ante<input class="moneyInput" id="ante" type="text" inputmode="decimal" min="0" step="5" value="25" /></label>
+      <label class="betBox jackpot">Jackpot<input class="moneyInput" id="jackpot" type="text" inputmode="decimal" min="0" step="5" value="10" /></label>
+      <label class="betBox trips">Trips<input class="moneyInput" id="trips" type="text" inputmode="decimal" min="0" step="5" value="0" /></label>
     </section>
 
     <section>
@@ -42,41 +43,87 @@
       </div>
     </section>
 
+    <section class="recommendation" id="recommendationBox">
+      <span id="recommendationTitle">Recommended: select cards</span>
+      <strong id="recommendationDetail">Pre-flop 4× guide appears here.</strong>
+    </section>
+
     <section>
-      <div class="sectionLabel">PLAY ACTION</div>
+      <div class="sectionLabel">PLAY</div>
       <div class="actionRow" id="actionRow">
-        <button class="actionBtn" data-action="4x" type="button">4×</button>
-        <button class="actionBtn" data-action="2x" type="button">2×</button>
-        <button class="actionBtn" data-action="1x" type="button">1×</button>
-        <button class="actionBtn fold" data-action="fold" type="button">FOLD</button>
+        <button class="actionBtn" data-action="4x" type="button"><strong>4×</strong><span id="play4x">$100</span></button>
+        <button class="actionBtn" data-action="2x" type="button"><strong>2×</strong><span id="play2x">$50</span></button>
+        <button class="actionBtn" data-action="1x" type="button"><strong>1×</strong><span id="play1x">$25</span></button>
+        <button class="actionBtn fold" data-action="fold" type="button"><strong>FOLD</strong><span>$0</span></button>
+      </div>
+      <div class="strategyWarning" id="strategyWarning" hidden></div>
+    </section>
+
+    <section class="qualifySection" id="qualifySection">
+      <div class="sectionLabel">DEALER QUALIFIES</div>
+      <div class="segmented three">
+        <button data-qualifies="yes" type="button">YES</button>
+        <button data-qualifies="no" type="button">NO</button>
+        <button data-qualifies="standoff" type="button">STANDOFF</button>
       </div>
     </section>
 
-    <section class="resultSection">
-      <div class="sectionLabel">ACTUAL NET P/L</div>
-      <div class="resultInputWrap">
-        <span>$</span>
-        <input id="netPL" type="number" inputmode="decimal" step="0.01" placeholder="0.00" aria-label="Actual net profit or loss" />
+    <section>
+      <div class="sectionLabel">RESULT</div>
+      <div class="segmented resultButtons">
+        <button data-result="win" type="button">WIN</button>
+        <button data-result="push" type="button">PUSH</button>
+        <button data-result="loss" type="button">LOSS</button>
       </div>
-      <div class="resultQuick">
-        <button id="winSign" type="button">+ WIN</button>
-        <button id="pushResult" type="button">PUSH</button>
-        <button id="lossSign" type="button">− LOSS</button>
+    </section>
+
+    <section class="rankSection" id="rankSection" hidden>
+      <div class="sectionLabel">BLIND PAYOUT</div>
+      <div class="rankButtons">
+        <button data-rank-result="below" type="button">Below Straight</button>
+        <button data-rank-result="straight" type="button">Straight</button>
+        <button data-rank-result="flush" type="button">Flush</button>
+        <button data-rank-result="fullhouse" type="button">Full House</button>
+        <button data-rank-result="quads" type="button">Quads</button>
+        <button data-rank-result="straightflush" type="button">Straight Flush</button>
+        <button data-rank-result="royal" type="button">Royal</button>
       </div>
+    </section>
+
+    <section class="plPanel">
+      <div class="plHeader">
+        <span>Calculated P/L</span>
+        <button id="overrideToggle" type="button">Override</button>
+      </div>
+      <div class="plRows">
+        <div><span>Main</span><strong id="mainPL">$0.00</strong></div>
+        <div><span>JP</span><strong id="jpPL">-$10.00</strong></div>
+        <div><span>Trips</span><strong id="tripsPL">$0.00</strong></div>
+        <div class="netRow"><span>Net</span><strong id="netCalculated">-$10.00</strong></div>
+      </div>
+      <label class="overrideField" id="overrideField" hidden>
+        Manual net P/L
+        <input class="moneyInput" id="netOverride" type="text" inputmode="decimal" step="0.01" placeholder="0.00" />
+      </label>
     </section>
 
     <footer class="footerActions">
-      <button class="secondaryBtn" id="undoBtn" type="button">UNDO</button>
-      <button class="primaryBtn" id="saveBtn" type="button">SAVE HAND</button>
+      <button class="primaryBtn" id="saveBtn" type="button">SAVE -$10.00</button>
     </footer>
   </main>
 
   <div class="sheetBackdrop" id="moreSheet" hidden>
     <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
-      <div class="sheetHeader"><h2 id="moreTitle">More details</h2><button class="iconClose" data-close-sheet="moreSheet" type="button">×</button></div>
+      <div class="sheetHeader">
+        <h2 id="moreTitle">More</h2>
+        <button class="iconClose" data-close-sheet="moreSheet" type="button">×</button>
+      </div>
       <div id="postFields" hidden>
         <label class="field">Recorded hand #<input id="manualHandNumber" type="number" inputmode="numeric" min="1" placeholder="Auto" /></label>
         <label class="field">Hand date/time<input id="handDateTime" type="datetime-local" /></label>
+      </div>
+      <div class="sheetActions single">
+        <button class="secondaryBtn full" id="undoBtn" type="button">UNDO LAST HAND</button>
       </div>
       <div class="sectionLabel padTop">BOARD RUNOUT</div>
       <div class="boardRow">
@@ -91,37 +138,45 @@
         <button class="smallCard" data-card-slot="dealer1" type="button">Dealer 1</button>
         <button class="smallCard" data-card-slot="dealer2" type="button">Dealer 2</button>
       </div>
-      <label class="field">Jackpot payout<input id="jackpotPayout" type="number" inputmode="decimal" step="0.01" value="0" /></label>
-      <label class="field">Trips payout<input id="tripsPayout" type="number" inputmode="decimal" step="0.01" value="0" /></label>
-      <label class="field">Jackpot meter<input id="jackpotMeter" type="number" inputmode="decimal" step="1" placeholder="Optional" /></label>
+      <label class="field">Jackpot payout<input class="moneyInput" id="jackpotPayout" type="text" inputmode="decimal" step="0.01" value="0" /></label>
+      <label class="field">Trips payout<input class="moneyInput" id="tripsPayout" type="text" inputmode="decimal" step="0.01" value="0" /></label>
+      <label class="field">Jackpot meter<input class="moneyInput" id="jackpotMeter" type="text" inputmode="decimal" step="1" placeholder="Optional" /></label>
       <label class="field">Notes<textarea id="notes" rows="3" placeholder="Optional"></textarea></label>
     </section>
   </div>
 
   <div class="sheetBackdrop" id="historySheet" hidden>
     <section class="sheet historySheet" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
-      <div class="sheetHeader"><h2 id="historyTitle">Saved hands</h2><button class="iconClose" data-close-sheet="historySheet" type="button">×</button></div>
+      <div class="sheetHeader">
+        <h2 id="historyTitle">Saved hands</h2>
+        <button class="iconClose" data-close-sheet="historySheet" type="button">×</button>
+      </div>
       <div id="historyList"></div>
     </section>
   </div>
 
   <div class="sheetBackdrop" id="statsSheet" hidden>
     <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
-      <div class="sheetHeader"><h2 id="statsTitle">Session statistics</h2><button class="iconClose" data-close-sheet="statsSheet" type="button">×</button></div>
-      <label class="field">Starting bankroll<input id="startingBankroll" type="number" inputmode="decimal" min="0" step="50" value="3000" /></label>
+      <div class="sheetHeader">
+        <h2 id="statsTitle">Session statistics</h2>
+        <button class="iconClose" data-close-sheet="statsSheet" type="button">×</button>
+      </div>
+      <label class="field">Starting bankroll<input class="moneyInput" id="startingBankroll" type="text" inputmode="decimal" min="0" step="50" value="3000" /></label>
       <div class="statsGrid">
         <div><span>Current bankroll</span><strong id="currentBankroll">$3,000.00</strong></div>
         <div><span>Hands</span><strong id="statHands">0</strong></div>
         <div><span>Actual P/L</span><strong id="statActual">$0.00</strong></div>
         <div><span>Expected P/L*</span><strong id="statExpected">$0.00</strong></div>
-        <div><span>Actual − Expected</span><strong id="statVsEV">$0.00</strong></div>
+        <div><span>Actual - Expected</span><strong id="statVsEV">$0.00</strong></div>
         <div><span>Avg Ante</span><strong id="statAvgAnte">$0.00</strong></div>
         <div><span>4× frequency</span><strong id="freq4x">0%</strong></div>
         <div><span>2× frequency</span><strong id="freq2x">0%</strong></div>
         <div><span>1× frequency</span><strong id="freq1x">0%</strong></div>
         <div><span>Fold frequency</span><strong id="freqFold">0%</strong></div>
+        <div><span>Strategy accuracy</span><strong id="statAccuracy">0%</strong></div>
+        <div><span>Deviations</span><strong id="statDeviations">0</strong></div>
       </div>
-      <p class="footnote">*Main-game benchmark uses −2.185% of the Ante per recorded hand. Jackpot and Trips EV are deliberately excluded.</p>
+      <p class="footnote">*Main-game benchmark uses -2.185% of the Ante per recorded hand. Jackpot and Trips EV are deliberately excluded.</p>
       <div class="sheetActions">
         <button class="secondaryBtn full" id="exportBtn" type="button">EXPORT JSON</button>
         <button class="dangerBtn full" id="newSessionBtn" type="button">NEW SESSION</button>
@@ -131,19 +186,21 @@
 
   <div class="sheetBackdrop" id="cardSheet" hidden>
     <section class="sheet cardSheet" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
-      <div class="sheetHeader"><h2 id="cardTitle">Select card</h2><button class="iconClose" data-close-sheet="cardSheet" type="button">×</button></div>
+      <div class="sheetHeader">
+        <h2 id="cardTitle">Select card</h2>
+        <button class="iconClose" data-close-sheet="cardSheet" type="button">×</button>
+      </div>
       <div class="rankGrid" id="rankGrid"></div>
       <div class="suitGrid" id="suitGrid">
-        <button data-suit="♠" type="button">♠</button>
+        <button data-suit="♠" class="blackSuit" type="button">♠</button>
         <button data-suit="♥" class="redSuit" type="button">♥</button>
         <button data-suit="♦" class="redSuit" type="button">♦</button>
-        <button data-suit="♣" type="button">♣</button>
+        <button data-suit="♣" class="blackSuit" type="button">♣</button>
       </div>
     </section>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
   <script src="app.js" defer></script>
 </body>
 </html>
