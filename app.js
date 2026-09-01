@@ -6,7 +6,7 @@
   const ranks = ['A','K','Q','J','10','9','8','7','6','5','4','3','2'];
   const suits = ['♠','♥','♦','♣'];
   const slotLabels = {hole1:'Card 1',hole2:'Card 2',flop1:'F1',flop2:'F2',flop3:'F3',turn:'T',river:'R',dealer1:'Dealer 1',dealer2:'Dealer 2'};
-  const actionLabels = { '4x':'4×', '2x':'2×', '1x':'1×', fold:'Fold' };
+  const actionLabels = { '4x':'4×', check:'Check', '2x':'2×', '1x':'1×', fold:'Fold' };
   const rankLabels = {below:'Below Straight',straight:'Straight',flush:'Flush',fullhouse:'Full House',quads:'Quads',straightflush:'Straight Flush',royal:'Royal'};
   const blindMultipliers = {below:0,straight:1,flush:1.5,fullhouse:3,quads:10,straightflush:50,royal:500};
   const $ = id => document.getElementById(id);
@@ -173,12 +173,24 @@
   function chooseAction(action){
     selectedAction = action;
     document.querySelectorAll('[data-action]').forEach(btn => btn.classList.toggle('selected', btn.dataset.action === action));
-    $('qualifySection').classList.toggle('hiddenFlow', action === 'fold');
+    const isPartialCheck = action === 'check';
+    $('qualifySection').classList.toggle('hiddenFlow', action === 'fold' || isPartialCheck);
+    document.querySelector('[data-result="win"]').disabled = isPartialCheck;
+    document.querySelector('[data-result="push"]').disabled = isPartialCheck;
+    document.querySelector('[data-result="loss"]').disabled = isPartialCheck;
     if (action === 'fold') {
       selectedQualifies = null;
       selectButtonGroup('qualifies', null);
       if (!selectedResult) chooseResult('loss');
     }
+    if (isPartialCheck) {
+      selectedQualifies = null;
+      selectedResult = null;
+      selectedRankResult = 'below';
+      selectButtonGroup('qualifies', null);
+      selectButtonGroup('result', null);
+    }
+    renderRankSection();
     renderRecommendation();
     updateDerivedDisplay();
     haptic();
@@ -228,7 +240,12 @@
     const tripsPayout = toNumber($('tripsPayout').value);
     let antePL = 0, blindPL = 0, playPL = 0;
 
-    if (selectedAction === 'fold') {
+    if (selectedAction === 'check') {
+      return {
+        ante,blind,play,jackpot,trips,jackpotPayout,tripsPayout,
+        antePL:0,blindPL:0,playPL:0,mainPL:0,jpPL:0,tripsPL:0,calculatedNet:0,netPL:0
+      };
+    } else if (selectedAction === 'fold') {
       antePL = -ante;
       blindPL = -blind;
       playPL = 0;
@@ -319,6 +336,9 @@
     $('overrideField').hidden = true;
     $('overrideToggle').classList.remove('active');
     $('qualifySection').classList.remove('hiddenFlow');
+    document.querySelector('[data-result="win"]').disabled = false;
+    document.querySelector('[data-result="push"]').disabled = false;
+    document.querySelector('[data-result="loss"]').disabled = false;
     renderRankSection();
     if (!keepDefaults) applyDefaults();
     renderRecommendation();
@@ -330,7 +350,7 @@
     const btn = $('saveBtn');
     const calc = calculatePL();
     btn.classList.toggle('editing', editIndex !== null);
-    const prefix = editIndex !== null ? 'SAVE CHANGES' : mode === 'post' ? 'ADD' : 'SAVE';
+    const prefix = selectedAction === 'check' ? 'SAVE CHECK' : editIndex !== null ? 'SAVE CHANGES' : mode === 'post' ? 'ADD' : 'SAVE';
     btn.textContent = `${prefix} ${calc.netPL === 0 ? '$0.00' : money(calc.netPL,true)}`;
   }
 
@@ -350,6 +370,7 @@
       trips: calc.trips,
       cards: {...cards},
       action: selectedAction,
+      partial: selectedAction === 'check',
       playAmount: calc.play,
       qualifies: selectedAction === 'fold' ? null : selectedQualifies,
       result: selectedResult,
@@ -374,7 +395,8 @@
 
   function validateHand(){
     if (!cards.hole1 || !cards.hole2) return 'Select both hole cards.';
-    if (!selectedAction) return 'Select 4×, 2×, 1× or Fold.';
+    if (!selectedAction) return 'Select 4×, Check, 2×, 1× or Fold.';
+    if (selectedAction === 'check') return null;
     if (selectedAction !== 'fold' && !selectedQualifies) return 'Select whether the dealer qualifies.';
     if (!selectedResult) return 'Select Win, Push or Loss.';
     if (selectedResult === 'win' && selectedAction !== 'fold' && !selectedRankResult) return 'Select the Blind payout rank.';
@@ -544,12 +566,14 @@
       const pl = toNumber(hand.netPL);
       const deviation = hand.strategyDeviation ? ' · Warning' : '';
       const modeText = hand.mode === 'post' ? 'Post · ' : '';
+      const resultText = hand.partial ? 'PARTIAL' : String(hand.result || '-').toUpperCase();
+      const statusText = hand.partial ? 'Checked' : hand.qualifies ? 'Dealer ' + hand.qualifies : 'Fold';
       row.innerHTML = `
         <span class="selectDot" aria-hidden="true">${selectedDeleteIds.has(hand.id) ? '✓' : ''}</span>
         <span class="historyNo">#${hand.handNumber}</span>
         <span class="historyMeta">
           <span class="historyCards">${cardHtml(hand.cards?.hole1)} ${cardHtml(hand.cards?.hole2)} · ${actionLabels[hand.action] || '-'}</span>
-          <small>${modeText}${String(hand.result || '-').toUpperCase()} · ${hand.qualifies ? 'Dealer ' + hand.qualifies : 'Fold'} · A $${hand.ante} JP $${hand.jackpot} Trips $${hand.trips}${deviation}</small>
+          <small>${modeText}${resultText} · ${statusText} · A $${hand.ante} JP $${hand.jackpot} Trips $${hand.trips}${deviation}</small>
         </span>
         <strong class="historyPL ${pl>0?'positive':pl<0?'negative':''}">${pl===0?'$0.00':money(pl,true)}</strong>`;
       row.addEventListener('click',()=>{
